@@ -22,22 +22,26 @@ const userSchema = new mongoose.Schema({
     password: {type: String, required: true, select: false},
 
     socketID: {type: String, default: null},
-})
+});
+
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
 
 userSchema.methods.generateAuthToken = function(){
-    const token = jwt.sign({_id: this._id}, process.env.JWT_SECRET, {expiresIn: '7d'});
+    const token = jwt.sign({_id: this._id}, process.env.JWT_SECRET, {expiresIn: '7d',});
     return token;
-}
+};
 
 
 userSchema.methods.comparePassword = async function(password){
     return await bcrypt.compare(password, this.password);
-}
+};
 
-userSchema.static.hashPassword = async function(password){
-    return await bcrypt.hash(password, 10);
-}
 
-const userModel = mongoose.modules.User || mongoose.model('User', userSchema) ;
+const User = mongoose.models.User || mongoose.model('User', userSchema) ;
 
-module.exports = userModel;
+module.exports = User;
